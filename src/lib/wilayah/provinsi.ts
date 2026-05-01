@@ -1,0 +1,46 @@
+// Daftar provinsi Indonesia dengan kode wilayah Kemdikbud (level 1).
+// Format kode: 6 digit, contoh "010000" untuk Aceh.
+// Sumber: referensi.data.kemdikbud.go.id
+
+export type Provinsi = { kode: string; nama: string };
+
+export const PROVINSI: Provinsi[] = [
+  { kode: "010000", nama: "Prov. D.K.I. Jakarta" },
+  { kode: "020000", nama: "Prov. Jawa Barat" },
+  { kode: "030000", nama: "Prov. Jawa Tengah" },
+  { kode: "040000", nama: "Prov. D.I. Yogyakarta" },
+  { kode: "050000", nama: "Prov. Jawa Timur" },
+  { kode: "060000", nama: "Prov. Aceh" },
+  { kode: "070000", nama: "Prov. Sumatera Utara" },
+  { kode: "080000", nama: "Prov. Sumatera Barat" },
+  { kode: "090000", nama: "Prov. Riau" },
+  { kode: "100000", nama: "Prov. Jambi" },
+  { kode: "110000", nama: "Prov. Sumatera Selatan" },
+  { kode: "120000", nama: "Prov. Lampung" },
+  { kode: "130000", nama: "Prov. Kalimantan Barat" },
+  { kode: "140000", nama: "Prov. Kalimantan Tengah" },
+  { kode: "150000", nama: "Prov. Kalimantan Selatan" },
+  { kode: "160000", nama: "Prov. Kalimantan Timur" },
+  { kode: "170000", nama: "Prov. Sulawesi Utara" },
+  { kode: "180000", nama: "Prov. Sulawesi Tengah" },
+  { kode: "190000", nama: "Prov. Sulawesi Selatan" },
+  { kode: "200000", nama: "Prov. Sulawesi Tenggara" },
+  { kode: "210000", nama: "Prov. Maluku" },
+  { kode: "220000", nama: "Prov. Bali" },
+  { kode: "230000", nama: "Prov. Nusa Tenggara Barat" },
+  { kode: "240000", nama: "Prov. Nusa Tenggara Timur" },
+  { kode: "250000", nama: "Prov. Papua" },
+  { kode: "260000", nama: "Prov. Bengkulu" },
+  { kode: "280000", nama: "Prov. Maluku Utara" },
+  { kode: "290000", nama: "Prov. Banten" },
+  { kode: "300000", nama: "Prov. Kepulauan Bangka Belitung" },
+  { kode: "310000", nama: "Prov. Gorontalo" },
+  { kode: "320000", nama: "Prov. Kepulauan Riau" },
+  { kode: "330000", nama: "Prov. Papua Barat" },
+  { kode: "340000", nama: "Prov. Sulawesi Barat" },
+  { kode: "350000", nama: "Prov. Kalimantan Utara" },
+  { kode: "360000", nama: "Prov. Papua Selatan" },
+  { kode: "370000", nama: "Prov. Papua Tengah" },
+  { kode: "380000", nama: "Prov. Papua Pegunungan" },
+  { kode: "390000", nama: "Prov. Papua Barat Daya" },
+];

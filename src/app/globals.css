@@ -1,26 +1,110 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+html,
+body {
+  background: #f8fafc;
+  color: #0f172a;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+
+  .gradient-purple {
+    background-image: linear-gradient(135deg, #7e22ce 0%, #a855f7 100%);
+    color: #ffffff;
+  }
+
+  .gradient-purple-soft {
+    background-image: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+  }
+
+  .text-gradient-purple {
+    background-image: linear-gradient(135deg, #7e22ce 0%, #a855f7 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  .shadow-purple {
+    box-shadow: 0 4px 14px 0 rgba(168, 85, 247, 0.15);
+  }
+
+  .shadow-purple-lg {
+    box-shadow: 0 10px 30px -5px rgba(168, 85, 247, 0.3);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid #a855f7;
+  outline-offset: 1px;
+  border-color: #a855f7;
+}
+
+/* Tailwind v4 menghapus default cursor:pointer pada button. Kembalikan. */
+button:not(:disabled),
+[role="button"]:not(:disabled),
+summary,
+label[for],
+input[type="checkbox"]:not(:disabled),
+input[type="radio"]:not(:disabled),
+select:not(:disabled) {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/* Email body preview — styling minimal pengganti @tailwindcss/typography */
+.email-body {
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.email-body p {
+  margin: 0 0 0.75em;
+}
+.email-body p:last-child {
+  margin-bottom: 0;
+}
+.email-body strong {
+  color: #0f172a;
+  font-weight: 600;
+}
+.email-body ul,
+.email-body ol {
+  margin: 0.5em 0 0.75em;
+  padding-left: 1.5em;
+}
+.email-body ul {
+  list-style: disc;
+}
+.email-body ol {
+  list-style: decimal;
+}
+.email-body li {
+  margin: 0.25em 0;
+}
+.email-body a {
+  color: #7e22ce;
+  text-decoration: underline;
+}
+.email-body a:hover {
+  color: #581c87;
 }
