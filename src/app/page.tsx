@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 async function getStats() {
   try {
     const supabase = getSupabaseAdmin();

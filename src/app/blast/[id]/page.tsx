@@ -4,12 +4,20 @@ import { getSupabaseAdmin } from "@/lib/supabase/server";
 import type { EmailBlast, EmailTemplate } from "@/lib/types";
 import { BlastDeleteButton } from "@/components/BlastDeleteButton";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type Log = {
   id: string;
   email: string;
   status: string;
   error_message: string | null;
   sent_at: string;
+  delivered_at: string | null;
+  opened_at: string | null;
+  open_count: number;
+  clicked_at: string | null;
+  click_count: number;
   school: { nama: string; npsn: string | null; kabupaten: string | null } | null;
 };
 
@@ -35,13 +43,23 @@ async function loadDetail(
   if (statusFilter === "sent") logsQuery = logsQuery.eq("status", "sent");
   if (statusFilter === "failed") logsQuery = logsQuery.eq("status", "failed");
 
-  const [blastRes, logsRes] = await Promise.all([
+  const [blastRes, logsRes, openedCountRes, clickedCountRes] = await Promise.all([
     supabase
       .from("email_blasts")
       .select("*, template:email_templates(id, nama, subject, attachment_name)")
       .eq("id", id)
       .single(),
     logsQuery,
+    supabase
+      .from("email_blast_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("blast_id", id)
+      .not("opened_at", "is", null),
+    supabase
+      .from("email_blast_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("blast_id", id)
+      .not("clicked_at", "is", null),
   ]);
 
   if (blastRes.error || !blastRes.data) return null;
@@ -52,6 +70,8 @@ async function loadDetail(
     },
     logs: (logsRes.data ?? []) as Log[],
     totalLogs: logsRes.count ?? 0,
+    totalOpened: openedCountRes.count ?? 0,
+    totalClicked: clickedCountRes.count ?? 0,
   };
 }
 
@@ -108,10 +128,16 @@ export default async function BlastDetailPage({
   const detail = await loadDetail(id, page, pageSize, statusFilter);
   if (!detail) notFound();
 
-  const { blast, logs, totalLogs } = detail;
+  const { blast, logs, totalLogs, totalOpened, totalClicked } = detail;
   const totalPages = Math.max(1, Math.ceil(totalLogs / pageSize));
   const successRate = blast.total_target > 0
     ? Math.round((blast.total_terkirim / blast.total_target) * 100)
+    : 0;
+  const openRate = blast.total_terkirim > 0
+    ? Math.round((totalOpened / blast.total_terkirim) * 100)
+    : 0;
+  const clickRate = blast.total_terkirim > 0
+    ? Math.round((totalClicked / blast.total_terkirim) * 100)
     : 0;
 
   // Sender email dari env (sama yang dipakai oleh Brevo wrapper)
@@ -153,7 +179,7 @@ export default async function BlastDetailPage({
       </div>
 
       {/* STATS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <StatBox
           label="Target"
           value={blast.total_target}
@@ -169,6 +195,18 @@ export default async function BlastDetailPage({
           label="Gagal"
           value={blast.total_gagal}
           color="text-red-700"
+        />
+        <StatBox
+          label="Dibuka"
+          value={totalOpened}
+          color="text-blue-700"
+          sub={blast.total_terkirim > 0 ? `${openRate}% open rate` : undefined}
+        />
+        <StatBox
+          label="Diklik"
+          value={totalClicked}
+          color="text-fuchsia-700"
+          sub={blast.total_terkirim > 0 ? `${clickRate}% click rate` : undefined}
         />
         <StatBox
           label="Durasi"
@@ -310,6 +348,8 @@ export default async function BlastDetailPage({
                 <th className="text-left p-3.5 font-semibold text-slate-700 text-xs uppercase tracking-wide">Sekolah</th>
                 <th className="text-left p-3.5 font-semibold text-slate-700 text-xs uppercase tracking-wide">Email</th>
                 <th className="text-left p-3.5 font-semibold text-slate-700 text-xs uppercase tracking-wide">Status</th>
+                <th className="text-center p-3.5 font-semibold text-slate-700 text-xs uppercase tracking-wide">Buka</th>
+                <th className="text-center p-3.5 font-semibold text-slate-700 text-xs uppercase tracking-wide">Klik</th>
                 <th className="text-left p-3.5 font-semibold text-slate-700 text-xs uppercase tracking-wide">Waktu</th>
                 <th className="text-left p-3.5 font-semibold text-slate-700 text-xs uppercase tracking-wide">Error</th>
               </tr>
@@ -338,6 +378,37 @@ export default async function BlastDetailPage({
                       {l.status}
                     </span>
                   </td>
+                  <td className="p-3.5 text-center">
+                    {l.opened_at ? (
+                      <span
+                        className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-50 px-2 py-0.5 rounded"
+                        title={`Pertama dibuka ${formatDate(l.opened_at)}`}
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        {l.open_count > 1 ? `${l.open_count}×` : "✓"}
+                      </span>
+                    ) : (
+                      <span className="text-slate-300 text-xs">—</span>
+                    )}
+                  </td>
+                  <td className="p-3.5 text-center">
+                    {l.clicked_at ? (
+                      <span
+                        className="inline-flex items-center gap-1 text-xs font-medium text-fuchsia-700 bg-fuchsia-50 px-2 py-0.5 rounded"
+                        title={`Pertama diklik ${formatDate(l.clicked_at)}`}
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                        </svg>
+                        {l.click_count > 1 ? `${l.click_count}×` : "✓"}
+                      </span>
+                    ) : (
+                      <span className="text-slate-300 text-xs">—</span>
+                    )}
+                  </td>
                   <td className="p-3.5 text-xs text-slate-600">
                     {formatDate(l.sent_at)}
                   </td>
@@ -356,7 +427,7 @@ export default async function BlastDetailPage({
               ))}
               {logs.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-12 text-center text-slate-500">
+                  <td colSpan={7} className="p-12 text-center text-slate-500">
                     <p>{statusFilter ? "Tidak ada log dengan filter ini." : "Belum ada log pengiriman."}</p>
                     {!statusFilter && (
                       <p className="text-xs mt-1">

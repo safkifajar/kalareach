@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
       kabupaten: s.kabupaten,
     };
     try {
-      await sendEmailBrevo({
+      const result = await sendEmailBrevo({
         to: { email: s.email!, name: s.nama },
         subject: renderTemplate(tmpl.subject, vars),
         htmlContent: renderTemplate(tmpl.body_html, vars),
@@ -113,6 +113,7 @@ export async function POST(req: NextRequest) {
         school_id: s.id,
         email: s.email!,
         status: "sent",
+        message_id: result.messageId,
       });
     } catch (e) {
       gagal++;

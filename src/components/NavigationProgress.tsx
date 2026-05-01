@@ -74,6 +74,16 @@ function NavigationProgressInner() {
     return () => document.removeEventListener("click", onClick);
   }, [pathname, searchParams]);
 
+  // Intercept form submit (filter forms di halaman sekolah) supaya bar nyala
+  useEffect(() => {
+    function onSubmit() {
+      setVisible(true);
+      setProgress(15);
+    }
+    document.addEventListener("submit", onSubmit);
+    return () => document.removeEventListener("submit", onSubmit);
+  }, []);
+
   if (!visible) return null;
 
   return (

@@ -3,6 +3,10 @@ import { getSupabaseAdmin } from "@/lib/supabase/server";
 import type { EmailBlast } from "@/lib/types";
 import { BlastDeleteButton } from "@/components/BlastDeleteButton";
 
+// Halaman ini selalu fetch data terbaru, jangan cache
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 async function loadBlasts(): Promise<EmailBlast[]> {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase

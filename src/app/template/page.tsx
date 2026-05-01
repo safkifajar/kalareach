@@ -4,6 +4,9 @@ import type { EmailTemplate } from "@/lib/types";
 import { AttachmentUploader } from "@/components/AttachmentUploader";
 import { TemplatePreviewButton } from "@/components/TemplatePreviewButton";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 async function loadTemplates(): Promise<EmailTemplate[]> {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase

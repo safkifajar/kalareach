@@ -68,10 +68,30 @@ create table if not exists email_blast_logs (
   email text not null,
   status text not null,
   error_message text,
-  sent_at timestamptz not null default now()
+  message_id text,
+  sent_at timestamptz not null default now(),
+  delivered_at timestamptz,
+  opened_at timestamptz,
+  open_count int not null default 0,
+  clicked_at timestamptz,
+  click_count int not null default 0,
+  bounced_at timestamptz,
+  bounce_reason text
 );
 
+-- Migrasi: tambah kolom tracking kalau belum ada
+-- (HARUS sebelum CREATE INDEX di bawah, supaya kolom-kolom sudah ada)
+alter table email_blast_logs add column if not exists message_id text;
+alter table email_blast_logs add column if not exists delivered_at timestamptz;
+alter table email_blast_logs add column if not exists opened_at timestamptz;
+alter table email_blast_logs add column if not exists open_count int not null default 0;
+alter table email_blast_logs add column if not exists clicked_at timestamptz;
+alter table email_blast_logs add column if not exists click_count int not null default 0;
+alter table email_blast_logs add column if not exists bounced_at timestamptz;
+alter table email_blast_logs add column if not exists bounce_reason text;
+
 create index if not exists blast_logs_blast_idx on email_blast_logs (blast_id);
+create index if not exists blast_logs_message_id_idx on email_blast_logs (message_id) where message_id is not null;
 
 -- ====== STORAGE BUCKET (untuk attachment PDF) ======
 -- Buat bucket "attachments" via Supabase Dashboard → Storage → New bucket → public
