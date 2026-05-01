@@ -119,7 +119,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="p-4 border-t border-slate-100">
+      {/* <div className="p-4 border-t border-slate-100">
         <div className="rounded-lg gradient-purple-soft p-3 border border-purple-100">
           <div className="flex items-center gap-2 text-purple-700 text-xs font-medium mb-1">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,7 +131,7 @@ export function Sidebar() {
             Vercel + Supabase + Brevo
           </div>
         </div>
-      </div>
+      </div> */}
     </>
   );
 
