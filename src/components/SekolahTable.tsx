@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import type { School } from "@/lib/types";
+import { ConfirmDialog } from "./ConfirmDialog";
 
 type Props = {
   schools: School[];
@@ -11,11 +12,19 @@ type Props = {
   hasActiveFilter: boolean;
 };
 
+type ConfirmState =
+  | null
+  | { kind: "selected" }
+  | { kind: "filtered" }
+  | { kind: "single"; id: string; nama: string };
+
 export function SekolahTable({ schools, filterParams, hasActiveFilter }: Props) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [confirmState, setConfirmState] = useState<ConfirmState>(null);
   const [, startTransition] = useTransition();
 
   function toggle(id: string) {
@@ -30,83 +39,86 @@ export function SekolahTable({ schools, filterParams, hasActiveFilter }: Props) 
     else setSelected(new Set(schools.map((s) => s.id)));
   }
 
-  async function deleteSelected() {
-    if (selected.size === 0) return;
-    if (!confirm(`Hapus ${selected.size} sekolah terpilih? Tindakan ini tidak bisa dibatalkan.`)) return;
-
+  async function executeDelete() {
+    if (!confirmState) return;
     setDeleting(true);
     setError(null);
+    setSuccess(null);
     try {
+      let body: string;
+      if (confirmState.kind === "selected") {
+        body = JSON.stringify({ ids: Array.from(selected) });
+      } else if (confirmState.kind === "single") {
+        body = JSON.stringify({ ids: [confirmState.id] });
+      } else {
+        body = JSON.stringify({ all_filtered: filterParams });
+      }
+
       const res = await fetch("/api/sekolah", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: Array.from(selected) }),
+        body,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Gagal hapus");
+
+      if (confirmState.kind === "filtered") {
+        setSuccess(`Berhasil menghapus ${data.deleted} sekolah.`);
+      }
       setSelected(new Set());
+      setConfirmState(null);
       startTransition(() => router.refresh());
     } catch (e) {
       setError((e as Error).message);
+      setConfirmState(null);
     } finally {
       setDeleting(false);
     }
   }
 
-  async function deleteAllFiltered() {
-    if (!hasActiveFilter) {
-      setError("Aktifkan filter dulu (provinsi/kabupaten/kecamatan/pencarian) untuk bulk delete");
-      return;
+  function buildConfirmContent(): { title: string; message: React.ReactNode } {
+    if (!confirmState) return { title: "", message: null };
+    if (confirmState.kind === "selected") {
+      return {
+        title: `Hapus ${selected.size} sekolah terpilih?`,
+        message: "Sekolah-sekolah ini akan dihapus permanen dari database. Tindakan ini tidak bisa dibatalkan.",
+      };
     }
-    const filterDesc = Object.entries(filterParams)
-      .filter(([, v]) => v)
-      .map(([k, v]) => `${k}=${v}`)
-      .join(", ");
-    if (
-      !confirm(
-        `Hapus SEMUA sekolah yang match filter ini?\n\n${filterDesc}\n\nIni akan menghapus lebih dari ${schools.length} sekolah (mungkin juga di luar yang ditampilkan). Tidak bisa dibatalkan.`,
-      )
-    )
-      return;
-
-    setDeleting(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/sekolah", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ all_filtered: filterParams }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Gagal hapus");
-      alert(`Berhasil menghapus ${data.deleted} sekolah.`);
-      setSelected(new Set());
-      startTransition(() => router.refresh());
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setDeleting(false);
+    if (confirmState.kind === "single") {
+      return {
+        title: "Hapus sekolah ini?",
+        message: (
+          <>
+            <strong className="text-slate-900">{confirmState.nama}</strong> akan dihapus dari database.
+          </>
+        ),
+      };
     }
+    // filtered
+    const activeFilters = Object.entries(filterParams).filter(([, v]) => v);
+    return {
+      title: "Hapus SEMUA sekolah yang match filter?",
+      message: (
+        <>
+          <div>Filter aktif:</div>
+          <ul className="mt-1.5 space-y-0.5">
+            {activeFilters.map(([k, v]) => (
+              <li key={k} className="text-xs">
+                <span className="text-slate-500">{k}:</span>{" "}
+                <strong className="text-slate-900">{v}</strong>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-2 text-amber-700">
+            Akan menghapus <strong>semua sekolah</strong> yang match filter (mungkin lebih dari{" "}
+            {schools.length} yang ditampilkan). Tindakan ini tidak bisa dibatalkan.
+          </div>
+        </>
+      ),
+    };
   }
 
-  async function deleteOne(id: string, nama: string) {
-    if (!confirm(`Hapus sekolah "${nama}"?`)) return;
-    setDeleting(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/sekolah", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: [id] }),
-      });
-      if (!res.ok) throw new Error((await res.json()).error ?? "Gagal hapus");
-      startTransition(() => router.refresh());
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setDeleting(false);
-    }
-  }
+  const confirmContent = buildConfirmContent();
 
   return (
     <>
@@ -126,7 +138,7 @@ export function SekolahTable({ schools, filterParams, hasActiveFilter }: Props) 
           <div className="flex gap-2">
             {selected.size > 0 && (
               <button
-                onClick={deleteSelected}
+                onClick={() => setConfirmState({ kind: "selected" })}
                 disabled={deleting}
                 className="text-sm bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg px-3.5 py-1.5 font-medium inline-flex items-center gap-1.5"
               >
@@ -138,7 +150,7 @@ export function SekolahTable({ schools, filterParams, hasActiveFilter }: Props) 
             )}
             {hasActiveFilter && (
               <button
-                onClick={deleteAllFiltered}
+                onClick={() => setConfirmState({ kind: "filtered" })}
                 disabled={deleting}
                 className="text-sm bg-white hover:bg-red-50 border border-red-200 text-red-700 hover:border-red-400 disabled:opacity-50 rounded-lg px-3.5 py-1.5 font-medium inline-flex items-center gap-1.5"
               >
@@ -152,11 +164,37 @@ export function SekolahTable({ schools, filterParams, hasActiveFilter }: Props) 
         </div>
       )}
 
+      {success && (
+        <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-3.5 flex items-center justify-between gap-3">
+          <span>{success}</span>
+          <button
+            onClick={() => setSuccess(null)}
+            className="text-green-600 hover:text-green-800"
+            aria-label="Tutup"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {error && (
         <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3.5">
           {error}
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmState !== null}
+        onClose={() => setConfirmState(null)}
+        onConfirm={executeDelete}
+        title={confirmContent.title}
+        message={confirmContent.message}
+        confirmLabel="Hapus"
+        variant="danger"
+        loading={deleting}
+      />
 
       <div className="overflow-x-auto bg-white border border-slate-200 rounded-2xl">
         <table className="w-full text-sm">
@@ -260,7 +298,7 @@ export function SekolahTable({ schools, filterParams, hasActiveFilter }: Props) 
                 </td>
                 <td className="p-3.5 text-right">
                   <button
-                    onClick={() => deleteOne(s.id, s.nama)}
+                    onClick={() => setConfirmState({ kind: "single", id: s.id, nama: s.nama })}
                     disabled={deleting}
                     className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded p-1.5 disabled:opacity-50"
                     title="Hapus sekolah ini"

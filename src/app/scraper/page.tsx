@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Combobox, type ComboboxOption } from "@/components/Combobox";
 import { PROVINSI } from "@/lib/wilayah/provinsi";
 import { ScrapeProgressOverlay, type ScrapeProgress } from "@/components/ScrapeProgressOverlay";
+import { Select } from "@/components/Select";
 
 type Stats = {
   kode: string;
@@ -441,15 +442,15 @@ export default function ScraperPage() {
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">
               Status Sekolah
             </label>
-            <select
-              className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm bg-white"
+            <Select
               value={status}
-              onChange={(e) => setStatus(e.target.value)}
-            >
-              <option value="all">Semua</option>
-              <option value="n">Negeri</option>
-              <option value="s">Swasta</option>
-            </select>
+              onChange={setStatus}
+              options={[
+                { value: "all", label: "Semua" },
+                { value: "n", label: "Negeri" },
+                { value: "s", label: "Swasta" },
+              ]}
+            />
           </div>
 
           <div>
@@ -576,11 +577,12 @@ export default function ScraperPage() {
         onClose={() => {
           setOverlayOpen(false);
           if (progress.status === "done" && progress.result?.scraped) {
-            // Bawa filter wilayah supaya user langsung lihat hasil scrape-nya
+            // Bawa filter wilayah lengkap supaya cascading dropdown
+            // di halaman Sekolah ter-set dengan benar
             const params = new URLSearchParams();
+            if (selectedProvinsi) params.set("provinsi", selectedProvinsi.nama);
+            if (selectedKabupaten) params.set("kabupaten", selectedKabupaten.label);
             if (selectedKecamatan) params.set("kecamatan", selectedKecamatan.label);
-            else if (selectedKabupaten) params.set("kabupaten", selectedKabupaten.label);
-            else if (selectedProvinsi) params.set("provinsi", selectedProvinsi.nama);
             const qs = params.toString();
             router.push(`/sekolah${qs ? `?${qs}` : ""}`);
           }

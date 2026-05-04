@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 type Template = {
   id: string;
@@ -41,6 +42,7 @@ export default function EditTemplatePage({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   useEffect(() => {
     fetch(`/api/template/${id}`)
@@ -88,16 +90,17 @@ export default function EditTemplatePage({
   }
 
   async function hapus() {
-    if (!confirm(`Hapus template "${nama}"? Tidak bisa dibatalkan.`)) return;
     setSaving(true);
     try {
       const res = await fetch(`/api/template/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error((await res.json()).error ?? "Gagal hapus");
+      setConfirmDeleteOpen(false);
       router.push("/template");
       router.refresh();
     } catch (e) {
       setError((e as Error).message);
       setSaving(false);
+      setConfirmDeleteOpen(false);
     }
   }
 
@@ -234,7 +237,7 @@ export default function EditTemplatePage({
             </Link>
           </div>
           <button
-            onClick={hapus}
+            onClick={() => setConfirmDeleteOpen(true)}
             disabled={saving}
             className="text-red-600 border border-red-200 hover:bg-red-50 rounded-lg px-4 py-2.5 text-sm font-medium disabled:opacity-50"
           >
@@ -242,6 +245,17 @@ export default function EditTemplatePage({
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        onClose={() => setConfirmDeleteOpen(false)}
+        onConfirm={hapus}
+        title={`Hapus template "${nama}"?`}
+        message="Template ini akan dihapus permanen beserta attachment-nya. Tindakan ini tidak bisa dibatalkan."
+        confirmLabel="Hapus"
+        variant="danger"
+        loading={saving}
+      />
     </div>
   );
 }

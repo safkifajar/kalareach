@@ -57,11 +57,11 @@ export default async function TemplatePage() {
 
       <div className="grid md:grid-cols-2 gap-4">
         {templates.map((t) => (
-          <div key={t.id} className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-purple-300 hover:shadow-purple transition-all flex flex-col">
-            <div className="flex justify-between items-start gap-3 mb-3">
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-slate-900">{t.nama}</h3>
-                <p className="text-sm text-slate-600 mt-1 truncate" title={t.subject}>
+          <div key={t.id} className="bg-white border border-slate-200 rounded-2xl p-4 lg:p-5 hover:border-purple-300 hover:shadow-purple transition-all flex flex-col min-w-0 overflow-hidden">
+            <div className="flex justify-between items-start gap-3 mb-3 min-w-0">
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <h3 className="font-semibold text-slate-900 break-words">{t.nama}</h3>
+                <p className="text-sm text-slate-600 mt-1 break-words" title={t.subject}>
                   Subject: {t.subject}
                 </p>
                 <p className="text-xs text-slate-400 mt-1">

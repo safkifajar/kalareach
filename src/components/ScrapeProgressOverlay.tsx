@@ -142,16 +142,20 @@ export function ScrapeProgressOverlay({ open, progress, onClose }: Props) {
               {progress.recent.map((s, i) => (
                 <div
                   key={`${s.npsn ?? i}-${i}`}
-                  className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between gap-3 animate-fade-in"
+                  className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm animate-fade-in min-w-0"
                 >
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium text-slate-900 truncate">{s.nama}</div>
-                    <div className="text-xs text-slate-500 font-mono">{s.npsn ?? "-"}</div>
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <div className="flex items-start gap-2 min-w-0">
+                    <div className="min-w-0 flex-1 overflow-hidden">
+                      <div className="font-medium text-slate-900 break-words">
+                        {s.nama}
+                      </div>
+                      <div className="text-xs text-slate-500 font-mono">
+                        {s.npsn ?? "-"}
+                      </div>
+                    </div>
                     {s.status && (
                       <span
-                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                        className={`flex-shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded ${
                           /negeri/i.test(s.status)
                             ? "bg-blue-100 text-blue-700"
                             : "bg-amber-100 text-amber-700"
@@ -160,15 +164,17 @@ export function ScrapeProgressOverlay({ open, progress, onClose }: Props) {
                         {s.status}
                       </span>
                     )}
+                  </div>
+                  <div className="mt-1 text-xs">
                     {s.email ? (
                       <span
-                        className="text-purple-600 text-xs font-medium truncate max-w-[180px]"
+                        className="text-purple-600 font-medium break-all"
                         title={s.email}
                       >
                         ✉ {s.email}
                       </span>
                     ) : (
-                      <span className="text-slate-300 text-xs">tanpa email</span>
+                      <span className="text-slate-300">tanpa email</span>
                     )}
                   </div>
                 </div>

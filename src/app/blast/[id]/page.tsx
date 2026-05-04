@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import type { EmailBlast, EmailTemplate } from "@/lib/types";
 import { BlastDeleteButton } from "@/components/BlastDeleteButton";
+import { PageSizeSelect } from "@/components/PageSizeSelect";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -156,16 +157,7 @@ export default async function BlastDetailPage({
           </svg>
         </Link>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold text-slate-900">{blast.nama_batch}</h1>
-            <span
-              className={`text-xs font-medium px-2.5 py-1 rounded-md ${
-                statusBadge[blast.status] ?? statusBadge.draft
-              }`}
-            >
-              {blast.status}
-            </span>
-          </div>
+          <h1 className="text-xl lg:text-2xl font-bold text-slate-900 break-words">{blast.nama_batch}</h1>
           <p className="text-sm text-slate-500 mt-1">
             Dibuat {formatDate(blast.created_at)}
           </p>
@@ -303,8 +295,8 @@ export default async function BlastDetailPage({
         </div>
 
         {/* RIGHT COLUMN: Detail Pengiriman */}
-        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl">
-        <div className="p-5 border-b border-slate-200 flex justify-between items-center flex-wrap gap-3">
+        <div className="lg:col-span-2 min-w-0 bg-white border border-slate-200 rounded-2xl overflow-hidden">
+        <div className="p-4 lg:p-5 border-b border-slate-200 flex justify-between items-center flex-wrap gap-3">
           <div>
             <h2 className="font-semibold text-slate-900">Detail Pengiriman</h2>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -341,7 +333,75 @@ export default async function BlastDetailPage({
             })()}
           </div>
         </div>
-        <div className="overflow-x-auto">
+        {/* MOBILE CARD VIEW (< lg) */}
+        <div className="lg:hidden divide-y divide-slate-100 overflow-hidden">
+          {logs.map((l) => (
+            <div key={l.id} className="p-4 hover:bg-purple-50/30 min-w-0">
+              <div className="flex items-start justify-between gap-2 mb-2 min-w-0">
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <div className="font-medium text-slate-900 text-sm break-words">
+                    {l.school?.nama ?? <span className="text-slate-400 italic">(sekolah dihapus)</span>}
+                  </div>
+                  <div className="text-xs text-purple-600 break-all mt-0.5">{l.email}</div>
+                </div>
+                <span
+                  className={`inline-block text-xs font-medium px-2 py-0.5 rounded flex-shrink-0 ${
+                    logStatusBadge[l.status] ?? "bg-slate-100 text-slate-700"
+                  }`}
+                >
+                  {l.status}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap text-xs">
+                <span className="text-slate-500">{formatDate(l.sent_at)}</span>
+                <span
+                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded font-medium ${
+                    l.opened_at
+                      ? "text-blue-700 bg-blue-50"
+                      : "text-slate-400 bg-slate-50"
+                  }`}
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  {l.opened_at
+                    ? `Dibuka${l.open_count > 1 ? ` ${l.open_count}×` : ""}`
+                    : "Belum dibuka"}
+                </span>
+                <span
+                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded font-medium ${
+                    l.clicked_at
+                      ? "text-fuchsia-700 bg-fuchsia-50"
+                      : "text-slate-400 bg-slate-50"
+                  }`}
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  </svg>
+                  {l.clicked_at
+                    ? `Diklik${l.click_count > 1 ? ` ${l.click_count}×` : ""}`
+                    : "Belum diklik"}
+                </span>
+              </div>
+              {l.error_message && (
+                <div className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded break-words">
+                  {l.error_message.length > 100
+                    ? `${l.error_message.slice(0, 100)}...`
+                    : l.error_message}
+                </div>
+              )}
+            </div>
+          ))}
+          {logs.length === 0 && (
+            <div className="p-12 text-center text-slate-500">
+              <p>{statusFilter ? "Tidak ada log dengan filter ini." : "Belum ada log pengiriman."}</p>
+            </div>
+          )}
+        </div>
+
+        {/* DESKTOP TABLE VIEW (>= lg) */}
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
@@ -541,21 +601,13 @@ function Pagination({
         </div>
         <div className="flex items-center gap-2 text-xs">
           <span className="text-slate-500">Per halaman:</span>
-          <div className="flex items-center bg-slate-100 rounded-lg p-0.5">
-            {ALLOWED_PAGE_SIZES.map((size) => (
-              <Link
-                key={size}
-                href={buildHref({ page: 1, size })}
-                className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
-                  size === pageSize
-                    ? "bg-white text-purple-700 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                {size}
-              </Link>
-            ))}
-          </div>
+          <PageSizeSelect
+            value={pageSize}
+            options={ALLOWED_PAGE_SIZES}
+            defaultSize={DEFAULT_PAGE_SIZE}
+            baseHref={baseHref}
+            extraParams={extraParams}
+          />
         </div>
       </div>
       {totalPages > 1 && (
@@ -647,14 +699,14 @@ function StatBox({
   isText?: boolean;
 }) {
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-4">
-      <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+    <div className="bg-white border border-slate-200 rounded-2xl p-3 lg:p-4">
+      <div className="text-[10px] lg:text-xs font-semibold text-slate-500 uppercase tracking-wide truncate">
         {label}
       </div>
-      <div className={`mt-1.5 font-bold ${color} ${isText ? "text-base" : "text-2xl"}`}>
+      <div className={`mt-1 lg:mt-1.5 font-bold ${color} ${isText ? "text-sm lg:text-base" : "text-xl lg:text-2xl"}`}>
         {typeof value === "number" ? value.toLocaleString("id-ID") : value}
       </div>
-      {sub && <div className="text-xs text-slate-500 mt-0.5">{sub}</div>}
+      {sub && <div className="text-[10px] lg:text-xs text-slate-500 mt-0.5 truncate">{sub}</div>}
     </div>
   );
 }

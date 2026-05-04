@@ -155,11 +155,11 @@ export function BlastProgressOverlay({ open, progress, onClose, onViewDetail }: 
                     s.status === "failed" ? "border-red-200" : "border-slate-200"
                   }`}
                 >
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium text-slate-900 truncate">{s.nama}</div>
-                    <div className="text-xs text-slate-500 truncate">{s.email}</div>
+                  <div className="min-w-0 flex-1 overflow-hidden">
+                    <div className="font-medium text-slate-900 break-words">{s.nama}</div>
+                    <div className="text-xs text-slate-500 break-all">{s.email}</div>
                     {s.error && (
-                      <div className="text-xs text-red-600 mt-0.5 truncate" title={s.error}>
+                      <div className="text-xs text-red-600 mt-0.5 break-words" title={s.error}>
                         {s.error}
                       </div>
                     )}

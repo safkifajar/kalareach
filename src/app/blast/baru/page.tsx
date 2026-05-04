@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BlastProgressOverlay, type BlastProgress } from "@/components/BlastProgressOverlay";
+import { Select } from "@/components/Select";
 
 type Template = { id: string; nama: string; subject: string; attachment_name: string | null };
 type School = {
@@ -311,19 +312,17 @@ export default function BlastBaruPage() {
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
               Template Email
             </label>
-            <select
-              className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm bg-white"
+            <Select
               value={templateId}
-              onChange={(e) => setTemplateId(e.target.value)}
-            >
-              <option value="">— pilih template —</option>
-              {templates.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.nama}
-                  {t.attachment_name ? "  📎" : ""}
-                </option>
-              ))}
-            </select>
+              onChange={setTemplateId}
+              placeholder="— pilih template —"
+              searchable={templates.length > 5}
+              options={templates.map((t) => ({
+                value: t.id,
+                label: t.nama,
+                sub: t.attachment_name ? `📎 ${t.attachment_name}` : undefined,
+              }))}
+            />
             {templateId && templates.find((t) => t.id === templateId)?.attachment_name && (
               <p className="text-xs text-purple-700 mt-1.5 flex items-center gap-1">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -475,8 +474,8 @@ export default function BlastBaruPage() {
       </div>
 
       <div className="bg-white border border-slate-200 rounded-2xl">
-        <div className="p-5 border-b border-slate-200 space-y-4">
-          <div className="flex justify-between items-center flex-wrap gap-3">
+        <div className="p-4 lg:p-5 border-b border-slate-200 space-y-4">
+          <div className="flex justify-between items-center gap-3">
             <h2 className="font-semibold text-slate-900">
               Pilih Penerima{" "}
               <span className="text-purple-600">
@@ -487,101 +486,114 @@ export default function BlastBaruPage() {
                 )
               </span>
             </h2>
-            <div className="flex items-center gap-3">
-              {hasActiveFilter && (
+            {/* Tombol di header — hanya tampil di desktop (sm+) */}
+            {hasActiveFilter && (
+              <div className="hidden sm:flex items-center gap-2 flex-wrap">
                 <button
                   onClick={resetFilters}
-                  className="text-xs text-slate-500 hover:text-slate-700"
+                  className="text-xs text-slate-600 hover:text-slate-900 px-3 py-1.5 border border-slate-300 rounded-lg hover:bg-slate-50"
                 >
                   Reset filter
                 </button>
-              )}
-              <button
-                onClick={allFilteredSelected ? deselectAllFiltered : selectAllFiltered}
-                className="text-sm text-purple-600 font-medium hover:text-purple-700 hover:underline"
-              >
-                {allFilteredSelected
-                  ? "Hapus pilihan ini"
-                  : `Pilih semua${hasActiveFilter ? " (hasil filter)" : ""}`}
-              </button>
-            </div>
+                <button
+                  onClick={allFilteredSelected ? deselectAllFiltered : selectAllFiltered}
+                  className="text-sm font-semibold text-white gradient-purple shadow-purple hover:shadow-purple-lg rounded-lg px-3.5 py-1.5 transition-all"
+                >
+                  {allFilteredSelected ? "Hapus pilihan" : "Pilih semua"}
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5">
             <FilterField label="Provinsi">
-              <select
+              <Select
                 value={fProvinsi}
-                onChange={(e) => {
-                  setFProvinsi(e.target.value);
+                onChange={(v) => {
+                  setFProvinsi(v);
                   setFKabupaten("");
                   setFKecamatan("");
                 }}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white"
-              >
-                <option value="">Semua</option>
-                {filters.provinsi.map((p) => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </select>
+                searchable={filters.provinsi.length > 8}
+                placeholder="Semua"
+                options={[
+                  { value: "", label: "Semua" },
+                  ...filters.provinsi.map((p) => ({ value: p, label: p })),
+                ]}
+              />
             </FilterField>
             <FilterField label="Kabupaten">
-              <select
+              <Select
                 value={fKabupaten}
-                onChange={(e) => {
-                  setFKabupaten(e.target.value);
+                onChange={(v) => {
+                  setFKabupaten(v);
                   setFKecamatan("");
                 }}
                 disabled={!fProvinsi && filters.kabupaten.length > 50}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white disabled:bg-slate-50 disabled:text-slate-400"
-              >
-                <option value="">
-                  {!fProvinsi && filters.kabupaten.length > 50 ? "Pilih provinsi" : "Semua"}
-                </option>
-                {kabupatenOptions.map((k) => (
-                  <option key={k} value={k}>{k}</option>
-                ))}
-              </select>
+                searchable={kabupatenOptions.length > 8}
+                placeholder={
+                  !fProvinsi && filters.kabupaten.length > 50 ? "Pilih provinsi" : "Semua"
+                }
+                options={[
+                  { value: "", label: "Semua" },
+                  ...kabupatenOptions.map((k) => ({ value: k, label: k })),
+                ]}
+              />
             </FilterField>
             <FilterField label="Kecamatan">
-              <select
+              <Select
                 value={fKecamatan}
-                onChange={(e) => setFKecamatan(e.target.value)}
+                onChange={setFKecamatan}
                 disabled={!fKabupaten}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white disabled:bg-slate-50 disabled:text-slate-400"
-              >
-                <option value="">
-                  {!fKabupaten ? "Pilih kabupaten" : "Semua"}
-                </option>
-                {kecamatanOptions.map((k) => (
-                  <option key={k} value={k}>{k}</option>
-                ))}
-              </select>
+                searchable={kecamatanOptions.length > 8}
+                placeholder={!fKabupaten ? "Pilih kabupaten" : "Semua"}
+                options={[
+                  { value: "", label: "Semua" },
+                  ...kecamatanOptions.map((k) => ({ value: k, label: k })),
+                ]}
+              />
             </FilterField>
             <FilterField label="Jenjang">
-              <select
+              <Select
                 value={fJenjang}
-                onChange={(e) => setFJenjang(e.target.value)}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white"
-              >
-                <option value="">Semua</option>
-                {filters.jenjang.map((j) => (
-                  <option key={j} value={j}>{j}</option>
-                ))}
-              </select>
+                onChange={setFJenjang}
+                placeholder="Semua"
+                options={[
+                  { value: "", label: "Semua" },
+                  ...filters.jenjang.map((j) => ({ value: j, label: j })),
+                ]}
+              />
             </FilterField>
             <FilterField label="Status">
-              <select
+              <Select
                 value={fStatus}
-                onChange={(e) => setFStatus(e.target.value)}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white"
-              >
-                <option value="">Semua</option>
-                {filters.status.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
+                onChange={setFStatus}
+                placeholder="Semua"
+                options={[
+                  { value: "", label: "Semua" },
+                  ...filters.status.map((s) => ({ value: s, label: s })),
+                ]}
+              />
             </FilterField>
           </div>
+
+          {/* Tombol di bawah grid — hanya tampil di mobile (< sm) */}
+          {hasActiveFilter && (
+            <div className="sm:hidden flex items-center gap-2 flex-wrap">
+              <button
+                onClick={resetFilters}
+                className="flex-1 text-xs text-slate-600 hover:text-slate-900 px-3 py-2 border border-slate-300 rounded-lg hover:bg-slate-50"
+              >
+                Reset filter
+              </button>
+              <button
+                onClick={allFilteredSelected ? deselectAllFiltered : selectAllFiltered}
+                className="flex-1 text-sm font-semibold text-white gradient-purple shadow-purple hover:shadow-purple-lg rounded-lg px-3.5 py-2 transition-all"
+              >
+                {allFilteredSelected ? "Hapus pilihan" : "Pilih semua"}
+              </button>
+            </div>
+          )}
         </div>
         {!hasActiveFilter ? (
           <div className="p-10 text-center">

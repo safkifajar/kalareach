@@ -7,7 +7,7 @@ import {
   ALLOWED_PAGE_SIZES,
   DEFAULT_PAGE_SIZE,
 } from "@/components/Pagination";
-import { FilterSubmitButton } from "@/components/FilterSubmitButton";
+import { SekolahFilterForm } from "@/components/SekolahFilterForm";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -65,21 +65,40 @@ async function loadFilters() {
   const { data } = await supabase
     .from("schools")
     .select("provinsi, kabupaten, kecamatan")
-    .limit(5000);
+    .limit(10000);
+
   const provSet = new Set<string>();
-  const kabSet = new Set<string>();
-  const kecSet = new Set<string>();
+  // Mapping: provinsi -> Set of kabupaten
+  const kabByProv = new Map<string, Set<string>>();
+  // Mapping: kabupaten -> Set of kecamatan
+  const kecByKab = new Map<string, Set<string>>();
+
   for (const r of data ?? []) {
     if (r.provinsi) provSet.add(r.provinsi);
-    if (r.kabupaten) kabSet.add(r.kabupaten);
-    if (r.kecamatan) kecSet.add(r.kecamatan);
+    if (r.provinsi && r.kabupaten) {
+      if (!kabByProv.has(r.provinsi)) kabByProv.set(r.provinsi, new Set());
+      kabByProv.get(r.provinsi)!.add(r.kabupaten);
+    }
+    if (r.kabupaten && r.kecamatan) {
+      if (!kecByKab.has(r.kabupaten)) kecByKab.set(r.kabupaten, new Set());
+      kecByKab.get(r.kabupaten)!.add(r.kecamatan);
+    }
   }
+
+  // Convert to plain object for serialization to client component
+  const kabByProvObj: Record<string, string[]> = {};
+  for (const [k, v] of kabByProv) kabByProvObj[k] = Array.from(v).sort();
+  const kecByKabObj: Record<string, string[]> = {};
+  for (const [k, v] of kecByKab) kecByKabObj[k] = Array.from(v).sort();
+
   return {
     provinsi: Array.from(provSet).sort(),
-    kabupaten: Array.from(kabSet).sort(),
-    kecamatan: Array.from(kecSet).sort(),
+    kabByProv: kabByProvObj,
+    kecByKab: kecByKabObj,
   };
 }
+
+export type SekolahFilters = Awaited<ReturnType<typeof loadFilters>>;
 
 export default async function SekolahPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
@@ -100,7 +119,7 @@ export default async function SekolahPage({ searchParams }: { searchParams: Sear
 
   let schools: School[] = [];
   let totalSchools = 0;
-  let filters = { provinsi: [] as string[], kabupaten: [] as string[], kecamatan: [] as string[] };
+  let filters: SekolahFilters = { provinsi: [], kabByProv: {}, kecByKab: {} };
   let error: string | null = null;
   try {
     const [schoolsResult, filtersResult] = await Promise.all([
@@ -148,104 +167,17 @@ export default async function SekolahPage({ searchParams }: { searchParams: Sear
         </Link>
       </div>
 
-      <form className="rounded-2xl bg-white border border-slate-200 p-4 lg:p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
-        <div className="lg:col-span-2">
-          <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
-            Cari nama / NPSN
-          </label>
-          <input
-            name="q"
-            defaultValue={sp.q ?? ""}
-            placeholder="Ketik untuk mencari..."
-            className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
-            Provinsi
-          </label>
-          <select
-            name="provinsi"
-            defaultValue={sp.provinsi ?? ""}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm bg-white"
-          >
-            <option value="">Semua</option>
-            {filters.provinsi.map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
-            Kabupaten
-          </label>
-          <select
-            name="kabupaten"
-            defaultValue={sp.kabupaten ?? ""}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm bg-white"
-          >
-            <option value="">Semua</option>
-            {filters.kabupaten.map((k) => (
-              <option key={k} value={k}>{k}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
-            Kecamatan
-          </label>
-          <select
-            name="kecamatan"
-            defaultValue={sp.kecamatan ?? ""}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm bg-white"
-          >
-            <option value="">Semua</option>
-            {filters.kecamatan.map((k) => (
-              <option key={k} value={k}>{k}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
-            Status
-          </label>
-          <select
-            name="status"
-            defaultValue={sp.status ?? ""}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm bg-white"
-          >
-            <option value="">Semua</option>
-            <option value="negeri">Negeri</option>
-            <option value="swasta">Swasta</option>
-          </select>
-        </div>
-
-        <div className="sm:col-span-2 lg:col-span-6 flex items-center justify-between gap-3 flex-wrap">
-          <label className="flex items-center gap-2 text-sm font-medium text-slate-700 px-4 py-2 rounded-lg bg-purple-50 border border-purple-200 cursor-pointer hover:bg-purple-100">
-            <input
-              type="checkbox"
-              name="hasEmail"
-              value="1"
-              defaultChecked={sp.hasEmail === "1"}
-              className="accent-purple-600"
-            />
-            Hanya yang ada email
-          </label>
-          <div className="flex gap-2">
-            <Link
-              href="/sekolah"
-              className="text-sm text-slate-600 hover:text-purple-700 px-3 py-2"
-            >
-              Reset
-            </Link>
-            <FilterSubmitButton />
-          </div>
-        </div>
-      </form>
+      <SekolahFilterForm
+        defaults={{
+          q: sp.q,
+          provinsi: sp.provinsi,
+          kabupaten: sp.kabupaten,
+          kecamatan: sp.kecamatan,
+          status: sp.status,
+          hasEmail: sp.hasEmail,
+        }}
+        filters={filters}
+      />
 
       {error && (
         <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3.5">

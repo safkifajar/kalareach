@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageSizeSelect } from "./PageSizeSelect";
 
 export const ALLOWED_PAGE_SIZES = [10, 25, 50, 100] as const;
 export const DEFAULT_PAGE_SIZE = 10;
@@ -60,21 +61,13 @@ export function Pagination({
         </div>
         <div className="flex items-center gap-2 text-xs">
           <span className="text-slate-500">Per halaman:</span>
-          <div className="flex items-center bg-slate-100 rounded-lg p-0.5">
-            {ALLOWED_PAGE_SIZES.map((size) => (
-              <Link
-                key={size}
-                href={buildHref({ page: 1, size })}
-                className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
-                  size === pageSize
-                    ? "bg-white text-purple-700 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                {size}
-              </Link>
-            ))}
-          </div>
+          <PageSizeSelect
+            value={pageSize}
+            options={ALLOWED_PAGE_SIZES}
+            defaultSize={DEFAULT_PAGE_SIZE}
+            baseHref={baseHref}
+            extraParams={extraParams}
+          />
         </div>
       </div>
       {totalPages > 1 && (
